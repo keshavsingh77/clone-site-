@@ -1,3 +1,4 @@
+
 // src/pages/post/[id].js (FINAL, GUARANTEED CANONICAL FIX)
 
 import Head from 'next/head';
@@ -15,7 +16,8 @@ import ReadingProgressBar from '@/components/ReadingProgressBar';
 import CodeCopyButton from '@/components/CodeCopyButton';
 import ResponsiveEmbeds from '@/components/ResponsiveEmbeds';
 
-// RecentPostCard component (no changes)
+const BLOGGER_URL_DEFAULT = 'https://creativemindcode.blogspot.com';
+
 const RecentPostCard = ({ post }) => {
     const getPostId = (url) => { if (!url) return ''; return url.split('/').pop().replace('.html', ''); }
     const getFirstImage = (content) => { if (!content) return 'https://via.placeholder.com/160x90.png?text=No+Image'; const match = content.match(/<img.*?src="(.*?)"/); return match ? match[1] : 'https://via.placeholder.com/160x90.png?text=No+Image'; };
@@ -27,7 +29,6 @@ const RecentPostCard = ({ post }) => {
     )
 };
 
-// Main Post Page Component
 export default function PostPage({ post, recentPosts, categories, vercelCanonicalUrl }) {
   useEffect(() => { if (typeof window !== 'undefined') { Prism.highlightAll(); } }, [post]);
   if (!post) { return <div className="text-center p-10">Post not found...</div>; }
@@ -38,7 +39,6 @@ export default function PostPage({ post, recentPosts, categories, vercelCanonica
       <Head>
         <title>{post.title}</title>
         <meta name="description" content={post.contentSnippet?.substring(0, 155)} />
-        {/* --- YAHAN HAI ASLI FIX --- */}
         <link rel="canonical" href={vercelCanonicalUrl} />
       </Head>
       <main className="container mx-auto p-4 md:p-8 flex-grow">
@@ -68,14 +68,13 @@ export default function PostPage({ post, recentPosts, categories, vercelCanonica
               <div className="prose lg:prose-xl max-w-none break-words" dangerouslySetInnerHTML={{ __html: post.content }} />
               <CodeCopyButton />
               <ResponsiveEmbeds />
-              {/* --- YAHAN BHI FIX KIYA GAYA --- */}
               <ShareButtons title={post.title} url={vercelCanonicalUrl} />
             </div>
 
             <aside className="hidden lg:block space-y-6">
               <div className="bg-gray-50 p-6 rounded-xl border border-gray-100 sticky top-24">
                 <h4 className="font-bold text-gray-900 mb-4">Newsletter</h4>
-                <p className="text-xs text-gray-500 mb-4">Get the latest technical insights delivered directly to your inbox.</p>
+                <p className="text-xs text-gray-500 mb-4">Subscribe for updates.</p>
                 <input type="email" placeholder="Email address" className="w-full text-sm border-gray-200 rounded-lg p-2.5 mb-3" />
                 <button className="w-full bg-blue-600 text-white text-xs font-bold py-2.5 rounded-lg hover:bg-blue-700 transition-colors">Subscribe</button>
               </div>
@@ -100,9 +99,8 @@ export default function PostPage({ post, recentPosts, categories, vercelCanonica
   );
 }
 
-// --- DATA FETCHING FUNCTIONS ---
 export async function getStaticPaths() {
-    const BLOGGER_URL = process.env.BLOGGER_URL || 'https://filmy4u.blogspot.com';
+    const BLOGGER_URL = process.env.BLOGGER_URL || BLOGGER_URL_DEFAULT;
     const FEED_URL = `${BLOGGER_URL}/feeds/posts/default?alt=rss&max-results=500`;
     const parser = new Parser();
     let feed;
@@ -117,8 +115,7 @@ export async function getStaticPaths() {
 }
 
 export async function getStaticProps({ params }) {
-    const SITE_URL = 'https://ipopcorn.vercel.app';
-    const BLOGGER_URL = process.env.BLOGGER_URL || 'https://filmy4u.blogspot.com';
+    const BLOGGER_URL = process.env.BLOGGER_URL || BLOGGER_URL_DEFAULT;
     const FEED_URL = `${BLOGGER_URL}/feeds/posts/default?alt=rss&max-results=500`;
     const parser = new Parser();
     let allPosts;
@@ -132,19 +129,15 @@ export async function getStaticProps({ params }) {
     const currentPost = allPosts.find(item => item.link.split('/').pop().replace('.html', '') === params.id);
     if (!currentPost) { return { notFound: true }; }
 
-    // Canonical URL Fix
     const postId = currentPost.link.split('/').pop().replace('.html', '');
-    const vercelCanonicalUrl = `${SITE_URL}/post/${postId}`;
+    const vercelCanonicalUrl = `https://creativemindcode.vercel.app/post/${postId}`;
 
     const $ = cheerio.load(currentPost.content || "");
-    
-    // Cleanup Blogger specific wrappers
     $('.separator').each(function() { 
         const image = $(this).find('img'); 
         if (image.length) { $(this).replaceWith(image); } 
     });
     
-    // Handle responsive iframes
     $('iframe').each(function() { 
         const iframe = $(this); 
         iframe.removeAttr('width').removeAttr('height'); 
@@ -153,11 +146,9 @@ export async function getStaticProps({ params }) {
         iframe.addClass('absolute top-0 left-0 w-full h-full border-0'); 
     });
     
-    // Reading time calculation
     const stats = readingTime($.text());
     currentPost.readingTime = stats.text;
     
-    // Heading extraction for Table of Contents
     const headings = [];
     $('h2, h3').each((index, element) => { 
         const text = $(element).text(); 
@@ -171,7 +162,6 @@ export async function getStaticProps({ params }) {
     currentPost.content = $.html();
     currentPost.headings = headings;
     
-    // Find primary image
     const postImageMatch = currentPost.content.match(/<img.*?src="(.*?)"/);
     currentPost.image = postImageMatch ? postImageMatch[1] : null;
     
